@@ -74,6 +74,26 @@ check "migrate imports new"        '[[ $aliases[old1] == "cd \"/tmp\"" ]]'
 check "migrate skips existing"     '[[ $(eval dup) == two ]]'
 check "migrate skips bad names"    '! grep -q "bad;name" $JUMP2_FILE'
 
+print "last / hints"
+LF=$TMP/last-file
+printf '%s\n' \
+  "source $ROOT/jump2.zsh" \
+  'echo "npm install && npm run dev" >/dev/null && true' \
+  'jump2 last as setup' \
+  'exit' | env HOME="$HOME" JUMP2_FILE="$LF" zsh -f -i >/dev/null 2>&1
+check "last saves previous command" \
+  'grep -qF "alias setup=echo\\ \\\"npm\\ install\\ \\&\\&\\ npm\\ run\\ dev\\\"\\ \\>/dev/null\\ \\&\\&\\ true" $LF'
+
+mkdir -p $TMP/zd && print "source $ROOT/jump2.zsh" >$TMP/zd/.zshrc
+printf '%s\n' 'jump2 last as one' 'exit' | env HOME="$HOME" ZDOTDIR=$TMP/zd JUMP2_FILE="$TMP/empty-hist" zsh -i >/dev/null 2>&1
+check "last with no history saves nothing" '! grep -qs "^alias one=" $TMP/empty-hist'
+check "bare 'jump2 last' errors"      '! jump2 last 2>/dev/null'
+check "bare 'jump2 last' hints usage" 'jump2 last 2>&1 | grep -q "jump2 last as <name>"'
+check "unquoted command hints quotes" 'jump2 npm run dev as d 2>&1 | grep -qF "jump2 \"npm run dev\" as d"'
+check "unquoted command saves nothing" '! jump2 npm run dev as d 2>/dev/null; ! jump2 ls | grep -q "^d "'
+check "generic usage mentions quotes"  'jump2 npm install 2>&1 | grep -q "must be in quotes"'
+check "quoted chain stored literally"  'jump2 "npm install && npm run dev" as setup2 >/dev/null; [[ $aliases[setup2] == "npm install && npm run dev" ]]'
+
 print "meta"
 check "--version" '[[ $(jump2 --version) == "jump2 $JUMP2_VERSION" ]]'
 check "--help"    'jump2 --help | grep -q "^Usage:"'

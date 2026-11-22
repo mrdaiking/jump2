@@ -2,8 +2,8 @@
 # Source this file from ~/.zshrc:   source /path/to/jump2.zsh
 # Requires zsh.
 
-typeset -g JUMP2_VERSION="0.1.0"
-typeset -ga _JUMP2_RESERVED=(ls list find rm remove migrate help version)
+typeset -g JUMP2_VERSION="0.1.1"
+typeset -ga _JUMP2_RESERVED=(ls list find rm remove migrate last help version)
 typeset -g _JUMP2_MTIME=""
 
 zmodload -F zsh/stat b:zstat 2>/dev/null
@@ -21,13 +21,18 @@ jump2 $JUMP2_VERSION - name a folder or a command, run it with one word
 Usage:
   jump2 <name>                  bookmark the current directory as <name>
   jump2 <folder> as <name>      bookmark a folder
-  jump2 "<command>" as <name>   save a command
+  jump2 "<command>" as <name>   save a command (quotes required)
+  jump2 last as <name>          save the command you just ran
   jump2 ls                      list everything saved
   jump2 find <text>             search names and targets
   jump2 rm <name>...            remove entries
   jump2 migrate [file]          import aliases (default: ~/.zsh_aliases)
   jump2 -f ...                  allow overriding an existing command
   jump2 --help | --version
+
+Example:
+  npm install && npm run dev        # you ran this...
+  jump2 last as setup               # ...now "setup" runs it again
 
 Data file: \$JUMP2_FILE (default ~/.config/jump2/aliases)
 EOF
@@ -87,17 +92,45 @@ _jump2_reload() {
   return 0
 }
 
+# Most recent history entry that is not a jump2 call.
+_jump2_prev_cmd() {
+  local i=1 line
+  while (( i <= 50 )); do
+    line=$(fc -ln -$i -$i 2>/dev/null) || return 1
+    line=${line##[[:space:]]#}
+    if [[ -n $line && $line != jump2 && $line != jump2\ * ]]; then
+      print -r -- "$line"
+      return 0
+    fi
+    (( i++ ))
+  done
+  return 1
+}
+
 _jump2_add() {
   local file=$1; shift
   local force=0 target name expanded abs cmd kind
   if [[ $1 == -f || $1 == --force ]]; then force=1; shift; fi
 
-  if (( $# == 3 )) && [[ $2 == as ]]; then
+  if (( $# == 3 )) && [[ $1 == last && $2 == as ]]; then
+    name=$3
+    target=$(_jump2_prev_cmd) || {
+      _jump2_err 'no previous command found in shell history'
+      return 1
+    }
+  elif (( $# == 3 )) && [[ $2 == as ]]; then
     target=$1; name=$3
+  elif (( $# == 1 )) && [[ $1 == last ]]; then
+    _jump2_err 'to save your last command: jump2 last as <name>'
+    return 1
   elif (( $# == 1 )); then
     target=$PWD; name=$1
+  elif (( $# > 3 )) && [[ ${@[-2]} == as ]]; then
+    _jump2_err "wrap the command in quotes:  jump2 \"${(j: :)@[1,-3]}\" as ${@[-1]}"
+    return 1
   else
-    _jump2_err 'usage: jump2 <name>  |  jump2 <folder-or-command> as <name>'
+    _jump2_err 'usage: jump2 <name>  |  jump2 "<folder-or-command>" as <name>  |  jump2 last as <name>'
+    _jump2_err 'a command with spaces, && or | must be in quotes; see jump2 --help'
     return 1
   fi
 
@@ -205,7 +238,7 @@ jump2() {
 
 _jump2_complete() {
   local -a subs
-  subs=(ls list find rm migrate help version)
+  subs=(ls list find rm migrate last help version)
   if (( CURRENT == 2 )); then
     _describe 'command' subs
   elif [[ $words[2] == rm ]]; then

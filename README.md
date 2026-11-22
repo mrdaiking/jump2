@@ -2,15 +2,30 @@
 
 Name a **folder** or a **command**, run it with one word. zsh only.
 
+Run something you always type? Save it once:
+
+```sh
+npm install && npm run dev        # you just ran this
+jump2 last as setup               # save it
+setup                             # run it again, anywhere
+```
+
+Folders work the same way:
+
 ```sh
 cd ~/Documents/project/shadow-it
-jump2 shait                           # bookmark cwd as "shait"
-jump2 ~/Downloads as dl               # bookmark any folder
-jump2 "cat ~/.ssh/config" as sc       # save a command
+jump2 shait                       # bookmark current folder
+jump2 ~/Downloads as dl           # bookmark any folder
 
-shait        # jumps to the folder
-dl           # jumps to ~/Downloads
-sc           # runs the command
+shait                             # jumps there
+dl
+```
+
+Or type a command yourself (**quotes required** when it has spaces, `&&` or `|`):
+
+```sh
+jump2 "npm install && npm run dev" as setup
+jump2 "cat ~/.ssh/config" as sc
 ```
 
 Unlike `z`/`autojump` (fuzzy, folders only), jump2 gives you explicit names and also stores commands.
@@ -39,7 +54,8 @@ Uninstall: `./install.sh --uninstall` (saved entries are kept).
 |---|---|
 | `jump2 <name>` | bookmark current directory |
 | `jump2 <folder> as <name>` | bookmark a folder |
-| `jump2 "<cmd>" as <name>` | save a command |
+| `jump2 last as <name>` | save the command you just ran |
+| `jump2 "<cmd>" as <name>` | save a command (quotes required) |
 | `jump2 ls` | list entries |
 | `jump2 find <text>` | search names and targets |
 | `jump2 rm <name>...` | remove entries |
