@@ -2,7 +2,7 @@ class Jump2 < Formula
   desc "Name a folder or a command, run it with one word (zsh)"
   homepage "https://github.com/mrdaiking/jump2"
   url "https://github.com/mrdaiking/jump2/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "REPLACE_WITH_TARBALL_SHA256"
+  sha256 "ba424e13c62df4eb3a994e041e20190036389566a88eb0a3d2b55ddf8e61fc4f"
   license "MIT"
 
   depends_on "zsh"
